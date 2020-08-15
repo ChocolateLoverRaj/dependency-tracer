@@ -1,12 +1,14 @@
 # Dependency Tree
-Line 08: git.gitignore
-Line 11:             | --> common.gitignore
+Line 08: npm.npmignore
+Line 13:             | --> common.gitignore
 
 
 # Input Files
 
-# Input: 'git.gitignore'
-
+# Input: 'npm.npmignore'
+# Common Ignore Files
+common-ignore/
+common-ignore.config.js
 
 # Input: 'common.gitignore'
 # VSCode
