@@ -5,7 +5,6 @@ import { join } from 'path'
 
 //Read a package.json
 const getDependencies = async packageJsonFile => {
-    console.log("hi", packageJsonFile)
     //The text in the package.json
     var packageJsonText
     try {
