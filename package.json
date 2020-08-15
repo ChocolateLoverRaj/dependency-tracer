@@ -2,10 +2,18 @@
   "name": "dependency-tracer",
   "version": "1.0.0",
   "description": "Traces dependencies that were implicitly installed by explicitly installed npm modules.",
-  "main": "index.js",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    "import": "./index.js",
+    "require": "./commonjs/index.js"
+  },
   "scripts": {
+    "rollup": "rollup -c ./rollup.config.js",
     "common-ignore": "commonignore -c ./common-ignore.config.cjs",
-    "prepack": "npm run common-ignore"
+    "build": "npm run rollup",
+    "prepack": "npm run common-ignore",
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -25,5 +33,8 @@
   "homepage": "https://github.com/ChocolateLoverRaj/dependency-tracer#readme",
   "devDependencies": {
     "common-ignore": "^1.1.1"
+  },
+  "dependencies": {
+    "rollup": "^2.26.0"
   }
 }

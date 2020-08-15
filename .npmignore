@@ -11,6 +11,9 @@ common-ignore/
 common-ignore.config.js
 
 # Input: 'common.gitignore'
+# Compiled CommonJS File
+commonjs/index.js
+
 # VSCode
 .vscode/
 

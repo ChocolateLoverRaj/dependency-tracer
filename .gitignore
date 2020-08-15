@@ -9,6 +9,9 @@ Line 11:             | --> common.gitignore
 
 
 # Input: 'common.gitignore'
+# Compiled CommonJS File
+commonjs/index.js
+
 # VSCode
 .vscode/
 
