@@ -4,7 +4,8 @@
   "description": "Traces dependencies that were implicitly installed by explicitly installed npm modules.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "common-ignore": "commonignore -c ./common-ignore.config.cjs",
+    "prepack": "npm run common-ignore"
   },
   "repository": {
     "type": "git",
@@ -21,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/ChocolateLoverRaj/dependency-tracer/issues"
   },
-  "homepage": "https://github.com/ChocolateLoverRaj/dependency-tracer#readme"
+  "homepage": "https://github.com/ChocolateLoverRaj/dependency-tracer#readme",
+  "devDependencies": {
+    "common-ignore": "^1.1.1"
+  }
 }
