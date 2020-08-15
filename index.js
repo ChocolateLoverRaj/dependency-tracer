@@ -2,10 +2,73 @@ import { promises as fsPromises } from 'fs'
 import { join } from 'path'
 
 //TODO read devDependencies too.
-//TODO put in github
 
-//Reads the current environments, 
-class NodeModuleReader {
+//Read a package.json
+const getDependencies = async packageJsonFile => {
+    console.log("hi", packageJsonFile)
+    //The text in the package.json
+    var packageJsonText
+    try {
+        packageJsonText = await fsPromises.readFile(packageJsonFile, 'utf8')
+    }
+    catch (e) {
+        if (e.code = 'ENOENT') {
+            throw new ReferenceError("Couldn't find package.json")
+        }
+    }
+
+    //The json in package.json
+    var packageJson
+    try {
+        packageJson = JSON.parse(packageJsonText)
+    }
+    catch (e) {
+        throw new SyntaxError("Invalid package.json")
+    }
+
+    //Make sure packageJson is an object
+    if (typeof packageJson !== 'object') {
+        throw new TypeError("(package.json) is not an object.")
+    }
+
+    //Make sure package.json has a string name
+    var packageName = packageJson.name
+    if (typeof packageName !== 'string') {
+        throw new TypeError("(package.json).name must be a string.")
+    }
+
+    //The dependencies in package.json
+    var dependencies = {}
+    //If package.json explicitly has dependencies, use those
+    if (packageJson.hasOwnProperty('dependencies')) {
+        dependencies = packageJson.dependencies
+    }
+    //Check that dependencies is an object
+    if (typeof dependencies !== 'object') {
+        throw new TypeError("(package.json).dependencies is not an object.")
+    }
+
+    //The devDependencies in package.json
+    var devDependencies = {}
+    //If the package.json explicitly has devDependencies, use those
+    if (packageJson.hasOwnProperty('devDependencies')) {
+        devDependencies = packageJson.devDependencies
+    }
+    //Check that devDependencies is an object
+    if (typeof devDependencies !== 'object') {
+        throw new TypeError("(package.json).devDependencies is not an object.")
+    }
+
+    //Return the info
+    return {
+        name: packageName,
+        dependencies: dependencies,
+        devDependencies: devDependencies
+    }
+}
+
+//Reads the current environments
+class DependencyTracer {
     //The modulesPath argument is if for some reason your modules aren't in "./node_modules"
     constructor(modulesPath = "./node_modules") {
         //Save the modulesPath in the object
@@ -75,53 +138,8 @@ class NodeModuleReader {
 
             //Promise that reads package.json
             var packageJsonPromise = (async () => {
-                //The text in the package.json of this module
-                var packageJsonText
-                try {
-                    packageJsonText = await fsPromises.readFile("./package.json", 'utf8')
-                }
-                catch (e) {
-                    if (e.code = 'ENOENT') {
-                        throw new ReferenceError("Couldn't find main package.json")
-                    }
-                }
-
-                //The json in package.json
-                var packageJson
-                try {
-                    packageJson = JSON.parse(packageJsonText)
-                }
-                catch (e) {
-                    throw new SyntaxError("Invalid package.json")
-                }
-
-                //Make sure packageJson is an object
-                if (typeof packageJson !== 'object') {
-                    throw new TypeError("(package.json) is not an object.")
-                }
-
-                //Make sure package.json has a string name
-                var packageName = packageJson.name
-                if (typeof packageName !== 'string') {
-                    throw new TypeError("(package.json).name must be a string.")
-                }
-
-                //The dependencies in package.json
-                var dependencies = {}
-                //If package.json explicitly has dependencies, use those
-                if (packageJson.hasOwnProperty('dependencies')) {
-                    dependencies = packageJson.dependencies
-                }
-                //Check that dependencies is an object
-                if (typeof dependencies !== 'object') {
-                    throw new TypeError("(package.json).dependencies is not an object.")
-                }
-
-                //Save to this
-                this.packageJson = {
-                    name: packageName,
-                    dependencies: dependencies
-                }
+                //Read the package.json
+                this.packageJson = await getDependencies("./package.json")
 
                 //Resolve the promise
                 return
@@ -236,9 +254,6 @@ class NodeModuleReader {
 
         //Go through all the packages in node modules
         for (let usedPackage of this.dirs) {
-            if (usedPackage.startsWith("@")) {
-                console.log(usedPackage)
-            }
             //Add a promise to readPromises
             readPromises.push((async () => {
                 //The contents of package.json
@@ -290,18 +305,4 @@ class NodeModuleReader {
     }
 }
 
-(async () => {
-    var nodeModuleReader = new NodeModuleReader()
-
-    await nodeModuleReader.ready
-
-    return await nodeModuleReader.getDependents("leadingzero")
-})()
-    .then(list => {
-        console.log(list)
-    })
-    .catch(err => {
-        console.log(err)
-    })
-
-export default NodeModuleReader
+export default DependencyTracer

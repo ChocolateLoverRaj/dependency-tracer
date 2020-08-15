@@ -1,0 +1,22 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --experimental-modules index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^2.6.1",
+    "eventemitter3": "^4.0.4",
+    "express": "^4.17.1",
+    "jsoneditor": "^9.0.3",
+    "leadingzero": "github:ChocolateLoverRaj/leadingzero#rollup-not-dev",
+    "papercss": "^1.7.0",
+    "rollup": "^2.23.0",
+    "tinycolor2": "^1.4.1"
+  }
+}
