@@ -175,7 +175,7 @@ class DependencyTracer {
     }
 
     //Read a package.json and get its dependencies
-    async getDependencies(packageName) {
+    async getDependencies(packageName, dev = false) {
         //Make sure this is ready
         this.checkReady()
 
@@ -184,47 +184,25 @@ class DependencyTracer {
             throw new ReferenceError("There is no folder with given name in node modules.")
         }
 
-        //The utf8 text of package.json
-        var packageJsonText
-        try {
-            packageJsonText = await fsPromises.readFile(join(this.modulesPath, packageName, "package.json"), 'utf8')
-        }
-        catch (e) {
-            if (e.code === 'ENOENT') {
-                throw new ReferenceError("package.json doesn't exist.")
-            }
-        }
+        //Read the package.json file
+        var {
+            dependencies,
+            devDependencies
+        } = await getDependencies(join(this.modulesPath, packageName, "package.json"))
 
-        //The parsed object of package.json
-        var packageJson
-        try {
-            packageJson = JSON.parse(packageJsonText)
+        //Check if we should also include devDependencies
+        if (dev) {
+            //Return the names of both dependencies and devDependencies
+            return [...new Set([...Object.keys(dependencies), ...Object.keys(devDependencies)])]
         }
-        catch (e) {
-            throw new SyntaxError("Error parsing package.json")
+        else {
+            //Return the names of the dependencies
+            return Object.keys(dependencies)
         }
-
-        //Make sure package.json is an object
-        if (typeof packageJson !== 'object') {
-            throw new TypeError("(package.json) is not an object.")
-        }
-
-        //The dependencies in package.json
-        var dependencies = {}
-        //If package.json explicitly has dependencies, add them
-        if (packageJson.hasOwnProperty('dependencies')) {
-            dependencies = packageJson.dependencies
-        }
-        //Make sure that the dependencies are an object
-        if (typeof dependencies !== 'object') {
-            throw new TypeError("(package.json).dependencies is not an object")
-        }
-
-        //Return the names of the dependencies
-        return Object.keys(dependencies)
     }
 
-    async getDependents(packageName) {
+    //Get all packages that depend on a package
+    async getDependents(packageName, dev = false) {
         //Make sure this is ready
         this.checkReady()
 
@@ -240,59 +218,36 @@ class DependencyTracer {
         var readPromises = []
 
         //Check dependencies of a package
-        const checkDependencies = (name, dependencies) => {
+        const checkDependencies = packageJson => {
+            //The dependencies to use
+            var dependencies = packageJson.dependencies
+            //If devDependencies too, add those.
+            if (dev) {
+                dependencies = {
+                    ...packageJson.dependencies,
+                    ...packageJson.devDependencies
+                }
+            }
+
             //Check if it has the specified package
             if (dependencies.hasOwnProperty(packageName)) {
                 //Add the name to dependents
-                dependents.push(name)
+                dependents.push(packageJson.name)
             }
         }
 
         //Go through the dependencies in this module
-        checkDependencies(this.packageJson.name, this.packageJson.dependencies)
+        checkDependencies(this.packageJson)
 
         //Go through all the packages in node modules
         for (let usedPackage of this.dirs) {
             //Add a promise to readPromises
             readPromises.push((async () => {
-                //The contents of package.json
-                var packageJsonText
-                try {
-                    packageJsonText = await fsPromises.readFile(join(this.modulesPath, usedPackage, "package.json"))
-                }
-                catch (e) {
-                    if (e.code === 'ENOENT') {
-                        throw new ReferenceError(join(this.modulesPath, usedPackage, "package.json"))
-                    }
-                }
-
-                //The parsed json
-                var packageJson
-                try {
-                    packageJson = JSON.parse(packageJsonText)
-                }
-                catch (e) {
-                    throw new SyntaxError("Couldn't parse package.json.")
-                }
-
-                //Make sure package.json is an object
-                if (typeof packageJson !== 'object') {
-                    throw new TypeError("(package.json) is not an object.")
-                }
-
-                //The package's dependencies
-                var dependencies = {}
-                //Check if the package explicitly has dependencies
-                if (packageJson.hasOwnProperty('dependencies')) {
-                    dependencies = packageJson.dependencies
-                }
-                //Make sure dependencies is an object
-                if (typeof dependencies !== 'object') {
-                    throw new TypeError("(package.json).dependencies is not an object.")
-                }
+                //Read the package.json
+                var packageJson = await getDependencies(join(this.modulesPath, usedPackage, "package.json"))
 
                 //Check the dependencies
-                checkDependencies(usedPackage, dependencies)
+                checkDependencies(packageJson)
             })())
         }
 
@@ -301,6 +256,50 @@ class DependencyTracer {
 
         //Return the dependents
         return dependents
+    }
+
+    //Trace a package back to the main package
+    async trace(packageName, dev = false) {
+        //Make sure this is ready
+        this.checkReady()
+
+        //List the dependents
+        const listDependents = async (list) => {
+            //The list of list promises
+            var listPromises = []
+
+            //Check if it is the main package
+            if (list[0] === this.packageJson.name) {
+                //Just wrap the list in an array
+                listPromises.push(Promise.resolve([list]))
+            }
+            else {
+                //Get the dependents
+                var dependents = await this.getDependents(list[0], dev)
+
+                //Loop through the dependents
+                for (let dependent of dependents) {
+                    listPromises.push(listDependents([dependent, ...list]))
+                }
+            }
+
+            //Wait for all the list promises
+            var lists = await Promise.all(listPromises)
+
+            //Collapsed lists
+            var allLists = []
+
+            //Loop through the lists
+            for (let list of lists) {
+                allLists = allLists.concat(list)
+            }
+
+            //Return the organized lists
+            return allLists
+        }
+
+        //List the dependents of the package
+        return await listDependents([packageName])
     }
 }
 

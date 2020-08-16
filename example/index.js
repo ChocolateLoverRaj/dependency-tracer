@@ -1,11 +1,11 @@
 import DependencyTracer from "../index.js"
 
 (async () => {
-    var nodeModuleReader = new DependencyTracer()
+    var dependencyTracer = new DependencyTracer()
 
-    await nodeModuleReader.ready
+    await dependencyTracer.ready
 
-    return await nodeModuleReader.getDependents("leadingzero")
+    return await dependencyTracer.trace("gulp-util")
 })()
     .then(list => {
         console.log(list)

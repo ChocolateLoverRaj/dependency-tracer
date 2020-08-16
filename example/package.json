@@ -18,5 +18,8 @@
     "papercss": "^1.7.0",
     "rollup": "^2.23.0",
     "tinycolor2": "^1.4.1"
+  },
+  "devDependencies": {
+    "common-ignore": "^1.1.1"
   }
 }
